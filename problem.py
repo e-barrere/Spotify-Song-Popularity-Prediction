@@ -1,33 +1,36 @@
 import os
 import pandas as pd
 import rampwf as rw
-from rampwf.workflows import FeatureExtractorRegressor
+
 from sklearn.model_selection import ShuffleSplit
 import numpy as np
 from sklearn.metrics import mean_squared_error
 
-
-
 from rampwf.score_types.base import BaseScoreType
 
 
-_train = 'train.csv'
-_test = 'test.csv'
+
 
 quick_mode = os.getenv('RAMP_TEST_MODE', 0)
 
-if(quick_mode):
+if quick_mode:
     _train = 'train_small.csv'
     _test = 'test_small.csv'
+else:
+    _train = 'train.csv'
+    _test = 'test.csv'
 
 problem_title = 'Spotify song popularity prediction'
 _target_column_names = ['popularity']
 
 # A type (class) which will be used to create wrapper objects for y_pred
 Predictions = rw.prediction_types.make_regression(
-    label_names=['popularity'])
+    label_names=_target_column_names
+)
+
 # An object implementing the workflow
-workflow = rw.workflows.FeatureExtractorRegressor()
+workflow = rw.workflows.Regressor()
+
 
 class RMSE(BaseScoreType):
     is_lower_the_better = True
@@ -48,8 +51,12 @@ score_types = [
 
 def _read_data(path, f_name):
     data = pd.read_csv(os.path.join(path, 'data', f_name))
-    y_array = data[_target_column_names].values
-    return X_df, y_array
+
+    labels = data[_target_column_names].to_numpy()
+
+    features = data.iloc[:, 10:20].to_numpy()
+
+    return features, labels
 
 
 def get_train_data(path='.'):
